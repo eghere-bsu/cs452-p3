@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "lab.h": "c"
+        "lab.h": "c",
+        "cctype": "c"
     }
 }

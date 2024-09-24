@@ -29,17 +29,18 @@ int main(int argc, char *argv[])
 
   using_history();
 
-  // Get the prompt from the environment variable MY_PROMPT
-  const char *prompt = getenv("MY_PROMPT");
+  char *prompt = get_prompt("MY_PROMPT");
   if (prompt == NULL)
   {
-    printf("MY_PROMPT env is not set.\n");
+    printf("Failed to get the shell prompt.\n");
     return 1;
   }
 
   char *line;
   while ((line = readline(prompt)))
   {
+    trim_white(line);
+    
     if (line && *line)
     {
       add_history(line);
@@ -47,8 +48,10 @@ int main(int argc, char *argv[])
 
     printf("You entered: %s\n", line);
 
-    free(line); // Free memory allocated by readline
+    free(line); 
   }
+  
+  free(prompt);
 
   return 0;
 }
