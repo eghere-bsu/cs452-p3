@@ -20,23 +20,32 @@ int main(int argc, char *argv[])
     {
     case 'v':
       print_version();
+      return 0; // Exit after printing version
     default:
       printf("Usage: %s [-v]\n", argv[0]);
+      return 1; // Exit with error for incorrect usage
     }
   }
 
-  // Initialize history handling for GNU Readline
   using_history();
 
+  // Get the prompt from the environment variable MY_PROMPT
+  const char *prompt = getenv("MY_PROMPT");
+  if (prompt == NULL)
+  {
+    printf("MY_PROMPT env is not set.\n");
+    return 1;
+  }
+
   char *line;
-  while ((line = readline("$ ")))
-  { // Display "$ " as the prompt
+  while ((line = readline(prompt)))
+  {
     if (line && *line)
-    { // Only add non-empty commands to history
+    {
       add_history(line);
     }
 
-    printf("You entered: %s\n", line); // Just a placeholder for command execution
+    printf("You entered: %s\n", line);
 
     free(line); // Free memory allocated by readline
   }
