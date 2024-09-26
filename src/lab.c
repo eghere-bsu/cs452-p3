@@ -18,7 +18,7 @@ typedef struct
 
 static const builtin_command builtins[] = {
     {"exit", handle_exit},
-    {"cd", handle_cd},
+    {"cd", change_dir},
     {"ls", handle_ls},
 };
 
@@ -118,7 +118,7 @@ char *get_prompt(const char *env)
     const char *prompt_env = getenv(env);
 
     // If the environment variable is not set or empty, use the default prompt
-    const char *default_prompt = "$ ";
+    const char *default_prompt = "shell>";
     const char *prompt = (prompt_env && strlen(prompt_env) > 0) ? prompt_env : default_prompt;
 
     // Allocate memory for the prompt string
@@ -146,7 +146,27 @@ char *get_prompt(const char *env)
  */
 int change_dir(char **dir)
 {
-    // TODO: Implement this function
+    const char *target_dir;
+
+    if (dir == NULL || dir[0] == NULL || strcmp(dir[0], "~") == 0)
+    {
+        // No directory specified or '~' specified: change to home directory
+        target_dir = getenv("HOME");
+    }
+    else
+    {
+        target_dir = dir[0]; // Use the specified directory
+    }
+
+    // Attempt to change to the target directory
+    if (chdir(target_dir) != 0)
+    {
+        // Error changing directory
+        perror("cd");
+        return -1; // Return -1 on error
+    }
+
+    return 0; // Return 0 on success
 }
 
 /**

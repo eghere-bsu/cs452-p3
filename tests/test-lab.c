@@ -139,6 +139,7 @@ void test_ch_dir_home(void)
   strncpy(line, "cd", 10);
   char **cmd = cmd_parse(line);
   char *expected = getenv("HOME");
+  printf("Home directory: %s\n", expected); // Debug statement
   change_dir(cmd);
   char *actual = getcwd(NULL, 0);
   TEST_ASSERT_EQUAL_STRING(expected, actual);
