@@ -12,7 +12,8 @@ void print_version()
 int main(int argc, char *argv[])
 {
   int opt;
-
+  struct shell sh;
+  
   // Parse command-line arguments
   while ((opt = getopt(argc, argv, "v")) != -1)
   {
@@ -40,17 +41,30 @@ int main(int argc, char *argv[])
   while ((line = readline(prompt)))
   {
     trim_white(line);
-    
+
     if (line && *line)
     {
+      // Parse the command into arguments
+      char **argv = cmd_parse(line);
+
+      // Check if the command is a built-in
+      if (!do_builtin(&sh, argv))
+      {
+        // If not a built-in, handle it as an external command here
+        printf("Executing external command: %s\n", line);
+        // Here you'd typically fork and execvp to run the command.
+      }
+
+      // Clean up
+      cmd_free(argv);
       add_history(line);
     }
 
     printf("You entered: %s\n", line);
 
-    free(line); 
+    free(line);
   }
-  
+
   free(prompt);
 
   return 0;

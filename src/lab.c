@@ -4,6 +4,40 @@
 #include <errno.h>
 #include <sys/wait.h>
 
+// Function prototypes for built-in commands
+static bool handle_exit(struct shell *sh, char **argv);
+
+// Define a structure for built-in commands
+typedef struct {
+    const char *name;
+    bool (*func)(struct shell *sh, char **argv);
+} builtin_command;
+
+// List of built-in commands and their corresponding functions
+static const builtin_command builtins[] = {
+    {"exit", handle_exit},
+    // Add more built-in commands here
+};
+
+// Number of built-in commands
+static const size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
+
+/**
+ * @brief Handle the 'exit' command. This function will exit the shell.
+ *
+ * @param sh The shell
+ * @param argv The command arguments
+ * @return True since 'exit' is a built-in command
+ */
+static bool handle_exit(struct shell *sh, char **argv)
+{
+    UNUSED(argv);
+    sh_destroy(sh); // Clean up shell resources
+    exit(0); // Exit the program
+    return true; // Should never reach here
+}
+
+
 /**
  * @brief Set the shell prompt. This function will attempt to load a prompt
  * from the requested environment variable, if the environment variable is
@@ -19,7 +53,7 @@ char *get_prompt(const char *env)
     const char *prompt_env = getenv(env);
 
     // If the environment variable is not set or empty, use the default prompt
-    const char *default_prompt = "shell>";
+    const char *default_prompt = "$ ";
     const char *prompt = (prompt_env && strlen(prompt_env) > 0) ? prompt_env : default_prompt;
 
     // Allocate memory for the prompt string
@@ -62,7 +96,48 @@ int change_dir(char **dir)
  */
 char **cmd_parse(char const *line)
 {
-    // TODO: Implement this function
+    if (line == NULL)
+    {
+        return NULL;
+    }
+
+    // Get the maximum number of arguments
+    long arg_max = sysconf(_SC_ARG_MAX);
+    if (arg_max == -1)
+    {
+        arg_max = 4096; // Fallback value if sysconf fails
+    }
+
+    // Allocate memory for argument list (limit to ARG_MAX)
+    char **argv = malloc((arg_max + 1) * sizeof(char *));
+    if (!argv)
+    {
+        perror("malloc");
+        return NULL;
+    }
+
+    // Tokenize the input line
+    char *line_copy = strdup(line); // Copy the line because strtok modifies it
+    if (!line_copy)
+    {
+        perror("strdup");
+        free(argv);
+        return NULL;
+    }
+
+    int argc = 0;
+    char *token = strtok(line_copy, " \t\n"); // Split by spaces, tabs, or newlines
+    while (token != NULL && argc < arg_max)
+    {
+        argv[argc++] = strdup(token); // Copy each token to the argv array
+        token = strtok(NULL, " \t\n");
+    }
+
+    argv[argc] = NULL; // Null-terminate the array
+
+    free(line_copy); // Free the temporary line copy
+
+    return argv;
 }
 
 /**
@@ -72,7 +147,18 @@ char **cmd_parse(char const *line)
  */
 void cmd_free(char **line)
 {
-    // TODO: Implement this function
+    if (line == NULL)
+    {
+        return;
+    }
+
+    // Free each argument string
+    for (int i = 0; line[i] != NULL; i++)
+    {
+        free(line[i]); 
+    }
+
+    free(line); // Free the argument list itself
 }
 
 /**
@@ -131,7 +217,20 @@ char *trim_white(char *line)
  */
 bool do_builtin(struct shell *sh, char **argv)
 {
-    // TODO: Implement this function
+    if (argv == NULL || argv[0] == NULL)
+    {
+        return false; 
+    }
+
+    for (size_t i = 0; i < num_builtins; i++)
+    {
+        if (strcmp(argv[0], builtins[i].name) == 0)
+        {
+            return builtins[i].func(sh, argv); // Execute the built-in command
+        }
+    }
+
+    return false; // Command is not a built-in
 }
 
 /**
