@@ -6,18 +6,22 @@
 
 // Function prototypes for built-in commands
 static bool handle_exit(struct shell *sh, char **argv);
+static bool handle_cd(struct shell *sh, char **argv);
+static bool handle_ls(struct shell *sh, char **argv);
 
 // Define a structure for built-in commands
-typedef struct {
+typedef struct
+{
     const char *name;
     bool (*func)(struct shell *sh, char **argv);
 } builtin_command;
 
-// List of built-in commands and their corresponding functions
 static const builtin_command builtins[] = {
     {"exit", handle_exit},
-    // Add more built-in commands here
+    {"cd", handle_cd},
+    {"ls", handle_ls},
 };
+
 
 // Number of built-in commands
 static const size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
@@ -33,8 +37,69 @@ static bool handle_exit(struct shell *sh, char **argv)
 {
     UNUSED(argv);
     sh_destroy(sh); // Clean up shell resources
-    exit(0); // Exit the program
-    return true; // Should never reach here
+    exit(0);        // Exit the program
+    return true;    // Should never reach here
+}
+
+/**
+ * @brief Handle the 'cd' command. This function will change the current directory.
+ *
+ * @param sh The shell
+ * @param argv The command arguments (argv[1] is the directory to change to)
+ * @return True since 'cd' is a built-in command
+ */
+static bool handle_cd(struct shell *sh, char **argv)
+{
+    const char *dir = argv[1]; // Directory to change to
+
+    if (dir == NULL || strcmp(dir, "~") == 0)
+    {
+        // No directory specified, or '~' specified: change to home directory
+        dir = getenv("HOME");
+    }
+
+    if (chdir(dir) != 0)
+    {
+        // Error changing directory
+        perror("cd");
+    }
+
+    return true;
+}
+
+/**
+ * @brief Handle the 'ls' command. This function will list directory contents.
+ *
+ * @param sh The shell
+ * @param argv The command arguments (e.g., 'ls -l')
+ * @return True since 'ls' is a built-in command
+ */
+static bool handle_ls(struct shell *sh, char **argv)
+{
+    UNUSED(sh);
+
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        perror("fork");
+        return true; // Fork failed, return true since 'ls' is a built-in command
+    }
+    else if (pid == 0)
+    {
+        // Child process: execute 'ls' command
+        execvp("ls", argv);
+        // If execvp fails:
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        // Parent process: wait for child to finish
+        int status;
+        waitpid(pid, &status, 0);
+    }
+
+    return true;
 }
 
 
@@ -155,7 +220,7 @@ void cmd_free(char **line)
     // Free each argument string
     for (int i = 0; line[i] != NULL; i++)
     {
-        free(line[i]); 
+        free(line[i]);
     }
 
     free(line); // Free the argument list itself
@@ -180,14 +245,14 @@ char *trim_white(char *line)
 
     // Trim leading whitespace
     char *start = line;
-    while (isspace((unsigned char)*start)) 
+    while (isspace((unsigned char)*start))
     {
         start++;
     }
 
     // Trim trailing whitespace
     char *end = line + strlen(line) - 1;
-    while (end > start && isspace((unsigned char)*end)) 
+    while (end > start && isspace((unsigned char)*end))
     {
         end--;
     }
@@ -196,7 +261,7 @@ char *trim_white(char *line)
     *(end + 1) = '\0';
 
     // Move the trimmed string to the start of the original line
-    if (start != line) 
+    if (start != line)
     {
         memmove(line, start, end - start + 2); // +2 to include null terminator
     }
@@ -219,7 +284,7 @@ bool do_builtin(struct shell *sh, char **argv)
 {
     if (argv == NULL || argv[0] == NULL)
     {
-        return false; 
+        return false;
     }
 
     for (size_t i = 0; i < num_builtins; i++)
