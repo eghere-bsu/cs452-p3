@@ -59,8 +59,8 @@ int main(int argc, char *argv[])
       cmd_free(argv);
       add_history(line);
     }
-
-    printf("You entered: %s\n", line);
+    //For debugging purposes
+    //printf("You entered: %s\n", line);
 
     free(line);
   }
