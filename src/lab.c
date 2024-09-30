@@ -4,11 +4,14 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 // Function prototypes for built-in commands
 static bool handle_exit(struct shell *sh, char **argv);
 static bool handle_cd(struct shell *sh, char **argv);
 static bool handle_ls(struct shell *sh, char **argv);
+static bool handle_history(struct shell *sh, char **argv);
 
 // Define structures for built-in commands
 typedef struct
@@ -21,6 +24,7 @@ static const builtin_command builtins[] = {
     {"exit", handle_exit},
     {"cd", handle_cd},
     {"ls", handle_ls},
+    {"history", handle_history}
 };
 
 // Number of built-in commands
@@ -104,7 +108,37 @@ static bool handle_ls(struct shell *sh, char **argv)
 }
 
 /**
- * @brief Set the shell prompt. This function will attempt to load a prompt
+ * @brief Handle the 'history' command. This function will print the command history.
+ *
+ * @param sh The shell
+ * @param argv The command arguments
+ * @return True since 'history' is a built-in command
+ */
+static bool handle_history(struct shell *sh, char **argv)
+{
+    UNUSED(sh);
+    UNUSED(argv);
+
+    // Get the history list
+    HIST_ENTRY **history = history_list();
+    if (history)
+    {
+        // Print each entry in the history
+        for (int i = 0; history[i]; i++)
+        {
+            printf("%d: %s\n", i + history_base, history[i]->line);
+        }
+    }
+    else
+    {
+        printf("No history available.\n");
+    }
+
+    return true;
+}
+
+/**
+ * @brief Get the shell prompt. This function will attempt to load a prompt
  * from the requested environment variable, if the environment variable is
  * not set a default prompt of "shell>" is returned.  This function calls
  * malloc internally and the caller must free the resulting string.

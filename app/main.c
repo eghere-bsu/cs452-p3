@@ -39,13 +39,10 @@ int main(int argc, char *argv[])
       cmd_free(argv);
       add_history(line);
     }
-    //For debugging purposes
-    //printf("You entered: %s\n", line);
 
     free(line);
   }
 
-  // free(prompt);
   sh_destroy(&sh);
   return 0;
 }
