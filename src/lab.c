@@ -12,6 +12,7 @@ static bool handle_exit(struct shell *sh, char **argv);
 static bool handle_cd(struct shell *sh, char **argv);
 static bool handle_ls(struct shell *sh, char **argv);
 static bool handle_history(struct shell *sh, char **argv);
+static bool handle_pwd(struct shell *sh, char **argv);
 
 // Define structures for built-in commands
 typedef struct
@@ -24,7 +25,8 @@ static const builtin_command builtins[] = {
     {"exit", handle_exit},
     {"cd", handle_cd},
     {"ls", handle_ls},
-    {"history", handle_history}
+    {"history", handle_history},
+    {"pwd", handle_pwd}
 };
 
 // Number of built-in commands
@@ -132,6 +134,36 @@ static bool handle_history(struct shell *sh, char **argv)
     else
     {
         printf("No history available.\n");
+    }
+
+    return true;
+}
+
+/**
+ * @brief Handle the 'pwd' command. This function will print the current working directory.
+ *
+ * @param sh The shell
+ * @param argv The command arguments
+ * @return True since 'pwd' is a built-in command
+ */
+static bool handle_pwd(struct shell *sh, char **argv)
+{
+    UNUSED(sh);
+    UNUSED(argv);
+
+    // Buffer to store the current working directory
+    char cwd[1024];
+
+    // Get the current working directory
+    if (getcwd(cwd, sizeof(cwd)) != NULL)
+    {
+        // Print the current working directory
+        printf("%s\n", cwd);
+    }
+    else
+    {
+        // Handle error
+        perror("pwd");
     }
 
     return true;
@@ -346,7 +378,7 @@ bool do_builtin(struct shell *sh, char **argv)
  */
 void sh_init(struct shell *sh)
 {
-    // TODO: Implement this function 
+    // TODO: Implement this function
 }
 
 /**
