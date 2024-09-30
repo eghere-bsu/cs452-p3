@@ -1,6 +1,7 @@
 #include "lab.h"
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
 
@@ -9,7 +10,7 @@ static bool handle_exit(struct shell *sh, char **argv);
 static bool handle_cd(struct shell *sh, char **argv);
 static bool handle_ls(struct shell *sh, char **argv);
 
-// Define a structure for built-in commands
+// Define structures for built-in commands
 typedef struct
 {
     const char *name;
@@ -18,10 +19,9 @@ typedef struct
 
 static const builtin_command builtins[] = {
     {"exit", handle_exit},
-    {"cd", change_dir},
+    {"cd", handle_cd},
     {"ls", handle_ls},
 };
-
 
 // Number of built-in commands
 static const size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
@@ -50,6 +50,7 @@ static bool handle_exit(struct shell *sh, char **argv)
  */
 static bool handle_cd(struct shell *sh, char **argv)
 {
+    UNUSED(sh);
     const char *dir = argv[1]; // Directory to change to
 
     if (dir == NULL || strcmp(dir, "~") == 0)
@@ -102,7 +103,6 @@ static bool handle_ls(struct shell *sh, char **argv)
     return true;
 }
 
-
 /**
  * @brief Set the shell prompt. This function will attempt to load a prompt
  * from the requested environment variable, if the environment variable is
@@ -146,27 +146,9 @@ char *get_prompt(const char *env)
  */
 int change_dir(char **dir)
 {
-    const char *target_dir;
-
-    if (dir == NULL || dir[0] == NULL || strcmp(dir[0], "~") == 0)
-    {
-        // No directory specified or '~' specified: change to home directory
-        target_dir = getenv("HOME");
-    }
-    else
-    {
-        target_dir = dir[0]; // Use the specified directory
-    }
-
-    // Attempt to change to the target directory
-    if (chdir(target_dir) != 0)
-    {
-        // Error changing directory
-        perror("cd");
-        return -1; // Return -1 on error
-    }
-
-    return 0; // Return 0 on success
+    struct shell sh;
+    handle_cd(&sh, dir);
+    return 0;
 }
 
 /**
@@ -202,7 +184,7 @@ char **cmd_parse(char const *line)
     }
 
     // Tokenize the input line
-    char *line_copy = strdup(line); // Copy the line because strtok modifies it
+    char *line_copy = strdup(line); // Copy the line
     if (!line_copy)
     {
         perror("strdup");
@@ -330,7 +312,7 @@ bool do_builtin(struct shell *sh, char **argv)
  */
 void sh_init(struct shell *sh)
 {
-    // TODO: Implement this function
+    // TODO: Implement this function 
 }
 
 /**
@@ -352,5 +334,17 @@ void sh_destroy(struct shell *sh)
  */
 void parse_args(int argc, char **argv)
 {
-    // TODO: Implement this function
+    int opt;
+    while ((opt = getopt(argc, argv, "v")) != -1)
+    {
+        switch (opt)
+        {
+        case 'v':
+            printf("Shell version: %d.%d\n", lab_VERSION_MAJOR, lab_VERSION_MINOR);
+            exit(0); // Exit after printing version
+        default:
+            printf("Usage: %s [-v]\n", argv[0]);
+            exit(1); // Exit with error for incorrect usage
+        }
+    }
 }

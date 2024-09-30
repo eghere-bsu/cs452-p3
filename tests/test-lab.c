@@ -35,6 +35,15 @@ void test_cmd_parse2(void)
   free(expected[0]);
   free(expected[1]);
   free(expected);
+
+  // GRADER'S NOTE: When I ran this through the test suite,
+  // it said that the test passes, but was leaking memory.
+  // This extra section should free the allocated memory. 
+  for (int i = 0; actual[i] != NULL; i++) {
+      free(actual[i]);
+  }
+  free(actual); // Free the argv array itself
+  free(stng);
 }
 
 void test_cmd_parse(void)

@@ -4,29 +4,11 @@
 #include <readline/history.h>
 #include "../src/lab.h"
 
-void print_version()
-{
-  printf("Shell version: %d.%d\n", lab_VERSION_MAJOR, lab_VERSION_MINOR);
-}
-
 int main(int argc, char *argv[])
 {
-  int opt;
   struct shell sh;
   
-  // Parse command-line arguments
-  while ((opt = getopt(argc, argv, "v")) != -1)
-  {
-    switch (opt)
-    {
-    case 'v':
-      print_version();
-      return 0; // Exit after printing version
-    default:
-      printf("Usage: %s [-v]\n", argv[0]);
-      return 1; // Exit with error for incorrect usage
-    }
-  }
+  parse_args(argc, argv);
 
   using_history();
 
@@ -44,10 +26,8 @@ int main(int argc, char *argv[])
 
     if (line && *line)
     {
-      // Parse the command into arguments
       char **argv = cmd_parse(line);
 
-      // Check if the command is a built-in
       if (!do_builtin(&sh, argv))
       {
         // If not a built-in, handle it as an external command here
@@ -65,7 +45,7 @@ int main(int argc, char *argv[])
     free(line);
   }
 
-  free(prompt);
-
+  // free(prompt);
+  sh_destroy(&sh);
   return 0;
 }
