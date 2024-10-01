@@ -27,9 +27,9 @@ static const builtin_command builtins[] = {
     {"cd", handle_cd},
     {"ls", handle_ls},
     {"history", handle_history},
-    {"pwd", handle_pwd}};
+    {"pwd", handle_pwd}
+};
 
-// Number of built-in commands
 static const size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
 
 /**
@@ -42,9 +42,9 @@ static const size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
 static bool handle_exit(struct shell *sh, char **argv)
 {
     UNUSED(argv);
-    sh_destroy(sh); // Clean up shell resources
-    exit(0);        // Exit the program
-    return true;    // Should never reach here
+    sh_destroy(sh); 
+    exit(0);
+    return true;
 }
 
 /**
@@ -57,19 +57,12 @@ static bool handle_exit(struct shell *sh, char **argv)
 static bool handle_cd(struct shell *sh, char **argv)
 {
     UNUSED(sh);
-    const char *dir = argv[1]; // Directory to change to
+    const char *dir = argv[1];
 
-    if (dir == NULL || strcmp(dir, "~") == 0)
-    {
-        // No directory specified, or '~' specified: change to home directory
-        dir = getenv("HOME");
-    }
-
-    if (chdir(dir) != 0)
-    {
-        // Error changing directory
-        perror("cd");
-    }
+    // On no 
+    if (dir == NULL || strcmp(dir, "~") == 0) dir = getenv("HOME");
+    // Error handling
+    if (chdir(dir) != 0) perror("cd");
 
     return true;
 }
@@ -102,7 +95,7 @@ static bool handle_ls(struct shell *sh, char **argv)
 
         // Child process: execute 'ls' command
         execvp("ls", argv);
-        // If execvp fails:
+        // Error if execvp fails
         perror("execvp");
         exit(EXIT_FAILURE);
     }
@@ -132,11 +125,7 @@ static bool handle_history(struct shell *sh, char **argv)
     HIST_ENTRY **history = history_list();
     if (history)
     {
-        // Print each entry in the history
-        for (int i = 0; history[i]; i++)
-        {
-            printf("%d: %s\n", i + history_base, history[i]->line);
-        }
+        for (int i = 0; history[i]; i++) printf("%d: %s\n", i + history_base, history[i]->line);
     }
     else
     {
@@ -187,14 +176,13 @@ static bool handle_pwd(struct shell *sh, char **argv)
  */
 char *get_prompt(const char *env)
 {
-    // Get the prompt from the environment variable
     const char *prompt_env = getenv(env);
 
-    // If the environment variable is not set or empty, use the default prompt
+    // Use default if no prompt set
     const char *default_prompt = "shell>";
     const char *prompt = (prompt_env && strlen(prompt_env) > 0) ? prompt_env : default_prompt;
 
-    // Allocate memory for the prompt string
+    // Allocate memory
     char *prompt_copy = (char *)malloc(strlen(prompt) + 1); // +1 for null terminator
     if (!prompt_copy)
     {
@@ -202,10 +190,10 @@ char *get_prompt(const char *env)
         return NULL;
     }
 
-    // Copy the prompt into the allocated memory
+    // Copy into allocated memory
     strcpy(prompt_copy, prompt);
 
-    return prompt_copy; // Caller must free this memory
+    return prompt_copy;
 }
 
 /**
@@ -220,7 +208,7 @@ char *get_prompt(const char *env)
 int change_dir(char **dir)
 {
     struct shell sh;
-    handle_cd(&sh, dir);
+    handle_cd(&sh, dir); //Passed to handle_cd to make the test suite happy
     return 0;
 }
 
@@ -236,17 +224,11 @@ int change_dir(char **dir)
  */
 char **cmd_parse(char const *line)
 {
-    if (line == NULL)
-    {
-        return NULL;
-    }
+    if (line == NULL) return NULL;
 
     // Get the maximum number of arguments
     long arg_max = sysconf(_SC_ARG_MAX);
-    if (arg_max == -1)
-    {
-        arg_max = 4096;
-    }
+    if (arg_max == -1) arg_max = 4096;
 
     // Allocate memory for argument list (limit to ARG_MAX)
     char **argv = malloc((arg_max + 1) * sizeof(char *));
@@ -286,16 +268,10 @@ char **cmd_parse(char const *line)
  */
 void cmd_free(char **line)
 {
-    if (line == NULL)
-    {
-        return;
-    }
+    if (line == NULL) return;
 
     // Free each argument string
-    for (int i = 0; line[i] != NULL; i++)
-    {
-        free(line[i]);
-    }
+    for (int i = 0; line[i] != NULL; i++) free(line[i]);
 
     free(line); // Free the argument list itself
 }
@@ -312,10 +288,7 @@ void cmd_free(char **line)
 char *trim_white(char *line)
 {
     // Check for NULL input
-    if (line == NULL)
-    {
-        return NULL;
-    }
+    if (line == NULL) return NULL;
 
     // Trim leading whitespace
     char *start = line;
@@ -331,7 +304,7 @@ char *trim_white(char *line)
         end--;
     }
 
-    // Null terminate the trimmed string
+    // Null terminate trimmed string
     *(end + 1) = '\0';
 
     // Move the trimmed string to the start of the original line
@@ -340,7 +313,7 @@ char *trim_white(char *line)
         memmove(line, start, end - start + 2); // +2 to include null terminator
     }
 
-    return line; // Return the trimmed string
+    return line; 
 }
 
 /**
@@ -356,10 +329,7 @@ char *trim_white(char *line)
  */
 bool do_builtin(struct shell *sh, char **argv)
 {
-    if (argv == NULL || argv[0] == NULL)
-    {
-        return false;
-    }
+    if (argv == NULL || argv[0] == NULL) return false;
 
     for (size_t i = 0; i < num_builtins; i++)
     {
