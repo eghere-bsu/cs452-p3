@@ -1,15 +1,27 @@
 #include <stdio.h>
+#include <signal.h>
 #include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "../src/lab.h"
 
+// Function to set up signal handlers for the parent shell
+void setup_signal_handlers() {
+    // Ignore signals in the parent process (shell)
+    signal(SIGINT, SIG_IGN);    // Ignore Ctrl+C (SIGINT)
+    signal(SIGQUIT, SIG_IGN);   // Ignore Ctrl+\ (SIGQUIT)
+    signal(SIGTSTP, SIG_IGN);   // Ignore Ctrl+Z (SIGTSTP)
+    signal(SIGTTIN, SIG_IGN);   // Ignore SIGTTIN (background input)
+    signal(SIGTTOU, SIG_IGN);   // Ignore SIGTTOU (background output)
+}
+
 int main(int argc, char *argv[])
 {
   struct shell sh;
   
+  // Pre-main loop setup
+  setup_signal_handlers();
   parse_args(argc, argv);
-
   using_history();
 
   char *prompt = get_prompt("MY_PROMPT");

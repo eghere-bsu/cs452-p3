@@ -1,6 +1,7 @@
 #include "lab.h"
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
@@ -89,10 +90,17 @@ static bool handle_ls(struct shell *sh, char **argv)
     if (pid < 0)
     {
         perror("fork");
-        return true; // Fork failed, return true since 'ls' is a built-in command
+        return true; //For argument handling
     }
     else if (pid == 0)
     {
+        // Child process: reset signals to default behavior
+        signal(SIGINT, SIG_DFL);
+        signal(SIGQUIT, SIG_DFL);
+        signal(SIGTSTP, SIG_DFL);
+        signal(SIGTTIN, SIG_DFL);
+        signal(SIGTTOU, SIG_DFL);
+        
         // Child process: execute 'ls' command
         execvp("ls", argv);
         // If execvp fails:
