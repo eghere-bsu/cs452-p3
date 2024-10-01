@@ -2,15 +2,16 @@
 #include "harness/unity.h"
 #include "../src/lab.h"
 
+struct shell sh;
+
 void setUp(void)
 {
-  struct shell test_shell;
-  sh_init(&test_shell);
+  sh_init(&sh);
 }
 
 void tearDown(void)
 {
-  sh_destroy();
+  sh_destroy(&sh);
 }
 
 void test_cmd_parse2(void)

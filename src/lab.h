@@ -72,7 +72,7 @@ extern "C"
      *
      * @return The line read in a format suitable for exec
      */
-    char **cmd_parse(char const *line, struct shell *sh);
+    char **cmd_parse(char const *line);
 
     /**
      * @brief Free the line that was constructed with parse_cmd
