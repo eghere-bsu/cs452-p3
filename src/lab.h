@@ -8,13 +8,16 @@
 
 #define lab_VERSION_MAJOR 1
 #define lab_VERSION_MINOR 0
+
+#define MAX_JOBS 100
+
 #define UNUSED(x) (void)x;
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
+    // Represents a shell
     struct shell
     {
         int shell_is_interactive;
@@ -22,7 +25,20 @@ extern "C"
         struct termios shell_tmodes;
         int shell_terminal;
         char *prompt;
+        int run_in_background;
     };
+
+    // Represents a job
+    typedef struct
+    {
+        int job_id;
+        pid_t pid;
+        char *command;
+    } job;
+
+
+    job jobs[MAX_JOBS]; // Array to store background jobs
+    int job_count;  // Counter for job IDs
 
     /**
      * @brief Set the shell prompt. This function will attempt to load a prompt
@@ -56,7 +72,7 @@ extern "C"
      *
      * @return The line read in a format suitable for exec
      */
-    char **cmd_parse(char const *line);
+    char **cmd_parse(char const *line, struct shell *sh);
 
     /**
      * @brief Free the line that was constructed with parse_cmd

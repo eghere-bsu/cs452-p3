@@ -27,11 +27,12 @@ static const builtin_command builtins[] = {
     {"cd", handle_cd},
     {"ls", handle_ls},
     {"history", handle_history},
-    {"pwd", handle_pwd}
-};
+    {"pwd", handle_pwd}};
 
 // Number of built-in commands
 static const size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
+
+int job_count = 0;
 
 /**
  * @brief Handle the 'exit' command. This function will exit the shell.
@@ -90,7 +91,7 @@ static bool handle_ls(struct shell *sh, char **argv)
     if (pid < 0)
     {
         perror("fork");
-        return true; //For argument handling
+        return true; // For argument handling
     }
     else if (pid == 0)
     {
@@ -100,7 +101,7 @@ static bool handle_ls(struct shell *sh, char **argv)
         signal(SIGTSTP, SIG_DFL);
         signal(SIGTTIN, SIG_DFL);
         signal(SIGTTOU, SIG_DFL);
-        
+
         // Child process: execute 'ls' command
         execvp("ls", argv);
         // If execvp fails:
@@ -235,21 +236,20 @@ int change_dir(char **dir)
  *
  * @return The line read in a format suitable for exec
  */
-char **cmd_parse(char const *line)
+char **cmd_parse(char const *line) // Pass sh as an argument
 {
+    cmd_parse_compat(*line);
     if (line == NULL)
     {
         return NULL;
     }
 
-    // Get the maximum number of arguments
     long arg_max = sysconf(_SC_ARG_MAX);
     if (arg_max == -1)
     {
-        arg_max = 4096; // Fallback value if sysconf fails
+        arg_max = 4096; // Default value if sysconf fails
     }
 
-    // Allocate memory for argument list (limit to ARG_MAX)
     char **argv = malloc((arg_max + 1) * sizeof(char *));
     if (!argv)
     {
@@ -257,8 +257,7 @@ char **cmd_parse(char const *line)
         return NULL;
     }
 
-    // Tokenize the input line
-    char *line_copy = strdup(line); // Copy the line
+    char *line_copy = strdup(line);
     if (!line_copy)
     {
         perror("strdup");
@@ -267,19 +266,39 @@ char **cmd_parse(char const *line)
     }
 
     int argc = 0;
-    char *token = strtok(line_copy, " \t\n"); // Split by spaces, tabs, or newlines
+    char *token = strtok(line_copy, " \t\n");
     while (token != NULL && argc < arg_max)
     {
-        argv[argc++] = strdup(token); // Copy each token to the argv array
+        argv[argc++] = strdup(token);
         token = strtok(NULL, " \t\n");
     }
 
-    argv[argc] = NULL; // Null-terminate the array
+    // Check for '&' for background execution
+    if (argc > 0 && strcmp(argv[argc - 1], "&") == 0)
+    {
+        argv[argc - 1] = NULL; // Remove '&'
+        sh->run_in_background = 1; // Use the passed shell instance
+    }
+    else
+    {
+        sh->run_in_background = 0; // Default to foreground
+    }
 
-    free(line_copy); // Free the temporary line copy
+    argv[argc] = NULL; // Null-terminate
+    free(line_copy);   // Free the duplicated line
 
-    return argv;
+    return argv; // Return parsed arguments
 }
+
+// Wrapper for cmd_parse to maintain compatibility
+char **cmd_parse_compat(char const *line) {
+    struct shell sh;   // Create a default shell instance
+    sh_init(&sh);      // Initialize the shell structure
+    char **args = cmd_parse(line, &sh);  // Call the original cmd_parse
+    sh_destroy(&sh);   // Clean up after
+    return args;
+}
+
 
 /**
  * @brief Free the line that was constructed with cmd_parse
@@ -386,7 +405,7 @@ bool do_builtin(struct shell *sh, char **argv)
  */
 void sh_init(struct shell *sh)
 {
-    // TODO: Implement this function
+    sh->run_in_background = 0;
 }
 
 /**
@@ -419,6 +438,38 @@ void parse_args(int argc, char **argv)
         default:
             printf("Usage: %s [-v]\n", argv[0]);
             exit(1); // Exit with error for incorrect usage
+        }
+    }
+}
+
+/**
+ * @brief Check for jobs running in the background of the shell.
+ * Displays any jobs if they completed each time the "ENTER" key is pressed.
+ *
+ */
+void check_background_jobs()
+{
+    int status;
+    pid_t pid;
+
+    for (int i = 0; i < job_count; i++)
+    {
+        // Non-blocking check for job completion
+        pid = waitpid(jobs[i].pid, &status, WNOHANG);
+        if (pid > 0)
+        {
+            // Job has finished
+            printf("[%d] Done %s\n", jobs[i].job_id, jobs[i].command);
+
+            // Shift remaining jobs down to remove finished job from the array
+            for (int j = i; j < job_count - 1; j++)
+            {
+                jobs[j] = jobs[j + 1];
+            }
+
+            // Reduce job count and adjust index
+            job_count--;
+            i--; // Re-check the current index after the shift
         }
     }
 }

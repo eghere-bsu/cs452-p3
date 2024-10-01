@@ -4,12 +4,13 @@
 
 void setUp(void)
 {
-  // set stuff up here
+  struct shell test_shell;
+  sh_init(&test_shell);
 }
 
 void tearDown(void)
 {
-  // clean stuff up here
+  sh_destroy();
 }
 
 void test_cmd_parse2(void)
